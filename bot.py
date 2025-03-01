@@ -10,23 +10,7 @@ OWNER_ID = "21080390"  # Telegram User ID नहीं, API_ID है
 bot = telebot.TeleBot(BOT_TOKEN)
 ALLOWED_GROUPS_FILE = 'allowed_groups.json'
 
-def load_allowed_groups():
-    """Load allowed groups from JSON file"""
-    if not os.path.exists(ALLOWED_GROUPS_FILE):
-        return []
-    with open(ALLOWED_GROUPS_FILE, 'r') as f:
-        return json.load(f).get('allowed_groups', [])
 
-def save_allowed_groups(groups):
-    """Save allowed groups to JSON file"""
-    with open(ALLOWED_GROUPS_FILE, 'w') as f:
-        json.dump({'allowed_groups': groups}, f)
-
-def group_allowed(message):
-    """Check if group is allowed"""
-    if message.chat.type in ['group', 'supergroup']:
-        return str(message.chat.id) in load_allowed_groups()
-    return True
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
