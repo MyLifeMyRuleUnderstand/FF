@@ -5,6 +5,3 @@ googleapis-common-protos
 pycryptodome
 protobuf
 Werkzeug
-telebot  
-requests
-gunicorn
