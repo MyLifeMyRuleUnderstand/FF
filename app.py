@@ -13,14 +13,19 @@ import uid_generator_pb2
 from google.protobuf.message import DecodeError
 
 
+
+
+
+app = Flask(__name__)
+
+
+
 @app.route('/')
 def home():
     return jsonify({"message": "API is running!"})
     
 
 
-
-app = Flask(__name__)
 
 def load_tokens(server_name):
     try:
