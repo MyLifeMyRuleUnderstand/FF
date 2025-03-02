@@ -75,7 +75,7 @@ def start(message):
     bot.send_message(message.chat.id, "🌟 *Welcome!* 🌟\n\n"
                                       "/ffstatus - Free Fire server status\n"
                                       "/ffevents [region] - Free Fire events\n"
-                                      "/likecheck <UID> <SERVER_NAME> - Check player likes", 
+                                      "/likecheck [UID] [SERVER_NAME] - Check player likes", 
                                       parse_mode='Markdown')
 
 # ✅ Run bot in background
