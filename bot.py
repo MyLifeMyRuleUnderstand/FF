@@ -1,10 +1,10 @@
 import telebot
 import requests
 import json
-import urllib.parse
 import os
 
-BOT_TOKEN = "BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M""
+BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M"  # ✅ सही फॉर्मेट
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start'])
@@ -19,8 +19,8 @@ def ffstatus(message):
     try:
         response = requests.get('https://ffstatusapi.vercel.app/api/freefire/normal/overview')
         bot.send_message(message.chat.id, f'```json\n{json.dumps(response.json(), indent=2)}\n```', parse_mode='Markdown')
-    except:
-        bot.send_message(message.chat.id, "❌ Error fetching status")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Error: {e}")
 
 @bot.message_handler(commands=['ffevents'])
 def ffevents(message):
@@ -31,7 +31,7 @@ def ffevents(message):
         
         response = requests.get(f'https://ff-event-nine.vercel.app/events?region={parts[1]}')
         bot.send_message(message.chat.id, f'```json\n{json.dumps(response.json(), indent=2)}\n```', parse_mode='Markdown')
-    except:
-        bot.send_message(message.chat.id, "❌ Error fetching events")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Error: {e}")
 
 bot.polling()
