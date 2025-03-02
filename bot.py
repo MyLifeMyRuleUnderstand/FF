@@ -1,11 +1,21 @@
+import os
 import telebot
 import requests
 import json
-import os
+from flask import Flask
 
-BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M"  # ✅ सही फॉर्मेट
+# ✅ Telegram Bot Token
+BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M"  # ✅ अपना टोकन यहां डालें
+
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN is missing! Please check your code.")
 
 bot = telebot.TeleBot(BOT_TOKEN)
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "✅ Bot is running successfully on Render!"
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -34,4 +44,13 @@ def ffevents(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ Error: {e}")
 
-bot.polling()
+# ✅ Bot Polling (अलग थ्रेड में चलेगा)
+def run_bot():
+    bot.polling(none_stop=True)
+
+if __name__ == '__main__':
+    from threading import Thread
+    Thread(target=run_bot).start()
+    
+    # ✅ Flask को 0.0.0.0 और पोर्ट 10000 पर रन करो
+    app.run(host='0.0.0.0', port=10000)
