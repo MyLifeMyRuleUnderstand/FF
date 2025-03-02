@@ -4,7 +4,7 @@ import json
 import urllib.parse
 import os
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+BOT_TOKEN = "BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M""
 bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start'])
