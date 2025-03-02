@@ -12,6 +12,14 @@ import like_count_pb2
 import uid_generator_pb2
 from google.protobuf.message import DecodeError
 
+
+@app.route('/')
+def home():
+    return jsonify({"message": "API is running!"})
+    
+
+
+
 app = Flask(__name__)
 
 def load_tokens(server_name):
@@ -234,9 +242,6 @@ def handle_requests():
     except Exception as e:
         app.logger.error(f"Error processing request: {e}")
         return jsonify({"error": str(e)}), 500
-@app.route('/')
-def home():
-    return jsonify({"message": "API is running!"})
 
 
 
