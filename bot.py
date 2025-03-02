@@ -18,7 +18,7 @@ import uid_generator_pb2
 app = Flask(__name__)
 
 # Telegram Bot Token
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 def load_tokens(server_name):
