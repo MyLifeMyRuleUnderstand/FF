@@ -1,6 +1,8 @@
 import telebot
 import requests
 import json
+import urllib.parse
+import os
 
 BOT_TOKEN = "YOUR_BOT_TOKEN"
 bot = telebot.TeleBot(BOT_TOKEN)
