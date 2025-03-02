@@ -234,6 +234,11 @@ def handle_requests():
     except Exception as e:
         app.logger.error(f"Error processing request: {e}")
         return jsonify({"error": str(e)}), 500
+@app.route('/')
+def home():
+    return jsonify({"message": "API is running!"})
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)
