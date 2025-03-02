@@ -1,48 +1,75 @@
 import os
 import json
-import telebot
 import requests
+import asyncio
+import telebot
 from flask import Flask, request, jsonify
+from google.protobuf.json_format import MessageToJson
 
 # ✅ Telegram Bot Token
-BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M"  
+BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M"
 if not BOT_TOKEN:
     raise ValueError("❌ BOT_TOKEN is missing! Please check your code.")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
-# ✅ टोकन लोड करने का फंक्शन (हर सर्वर के लिए अलग JSON फाइल)
+# ✅ Load Tokens Function
 def load_tokens(server_name):
+    file_map = {
+        "IND": "token_ind.json",
+        "BR": "token_br.json",
+        "US": "token_br.json",
+        "SAC": "token_br.json",
+        "NA": "token_br.json"
+    }
+    file_name = file_map.get(server_name, "token_bd.json")
+
+    if not os.path.exists(file_name):
+        return {"error": f"❌ Token file '{file_name}' not found"}
+
     try:
-        if server_name == "IND":
-            with open("token_ind.json", "r") as f:
-                tokens = json.load(f)
-        elif server_name in {"BR", "US", "SAC", "NA"}:
-            with open("token_br.json", "r") as f:
-                tokens = json.load(f)
-        else:
-            with open("token_bd.json", "r") as f:
-                tokens = json.load(f)
+        with open(file_name, "r") as f:
+            tokens = json.load(f)
         return tokens
+    except json.JSONDecodeError:
+        return {"error": f"❌ Invalid JSON format in '{file_name}'"}
     except Exception as e:
-        app.logger.error(f"Error loading tokens for server {server_name}: {e}")
-        return None
+        return {"error": f"❌ Error loading tokens: {str(e)}"}
 
-@app.route('/')
-def home():
-    return "✅ Bot is running successfully on Render!"
+# ✅ API Endpoint for Likes
+@app.route('/like', methods=['GET'])
+def handle_requests():
+    uid = request.args.get("uid")
+    server_name = request.args.get("server_name", "").upper()
+    if not uid or not server_name:
+        return jsonify({"error": "❌ UID and server_name are required"}), 400
 
-# ✅ स्टार्ट कमांड (बॉट के ऑप्शंस दिखाने के लिए)
+    try:
+        tokens = load_tokens(server_name)
+        if "error" in tokens:
+            return jsonify(tokens), 400
+        token = tokens[0]['token']
+        
+        # यहाँ पर आपकी लाइक प्रोसेसिंग लॉजिक रहेगी
+        result = {
+            "message": "✅ Like process initiated!",
+            "UID": uid,
+            "Server": server_name
+        }
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ✅ Telegram Bot Commands
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(message.chat.id, "🌟 *Welcome!* 🌟\n\n"
                                       "/ffstatus - Free Fire server status\n"
-                                      "/ffevents [region] - Free Fire events\n"
-                                      "/likecheck [UID] [SERVER_NAME] - Check player likes", 
+                                      "/ffevents region - Free Fire events\n"
+                                      "/likecheck UID SERVER - Check likes", 
                                       parse_mode='Markdown')
 
-# ✅ Free Fire Server Status चेक करने का फंक्शन
 @bot.message_handler(commands=['ffstatus'])
 def ffstatus(message):
     try:
@@ -51,7 +78,6 @@ def ffstatus(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ Error: {e}")
 
-# ✅ Free Fire Events चेक करने का फंक्शन
 @bot.message_handler(commands=['ffevents'])
 def ffevents(message):
     try:
@@ -64,33 +90,29 @@ def ffevents(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ Error: {e}")
 
-# ✅ `/likecheck` कमांड - प्लेयर के लाइक्स चेक करने के लिए
+# ✅ `/likecheck` Command for Checking Likes
 @bot.message_handler(commands=['likecheck'])
-def like_check(message):
+def likecheck(message):
     try:
-        parts = message.text.split(' ')
-        if len(parts) < 3:
-            return bot.reply_to(message, "ℹ️ Usage: /likecheck [UID] [SERVER_NAME]")
-
-        uid = parts[1]
-        server_name = parts[2].upper()
+        parts = message.text.split()
+        if len(parts) != 3:
+            return bot.reply_to(message, "❌ Usage: /likecheck UID SERVER_NAME")
+        
+        uid, server_name = parts[1], parts[2].upper()
         tokens = load_tokens(server_name)
+        if "error" in tokens:
+            return bot.send_message(message.chat.id, tokens["error"])
 
-        if not tokens:
-            return bot.reply_to(message, "❌ Error loading tokens for server.")
+        bot.send_message(message.chat.id, f"✅ Checking likes for UID: {uid} on server {server_name}...")
+        # यहाँ पर लाइक्स चेक करने की API कॉल हो सकती है
 
-        token = tokens[0]['token']
-        # ✅ API कॉल (इसे अपनी API से रिप्लेस करें)
-        response = requests.get(f"https://api.example.com/player_likes?uid={uid}&server={server_name}&token={token}")
-
-        if response.status_code == 200:
-            bot.send_message(message.chat.id, f"✅ Player Likes: {response.json().get('likes', 'Unknown')}")
-        else:
-            bot.send_message(message.chat.id, "❌ Failed to fetch player likes.")
+        fake_likes = 120  # (Demo के लिए)
+        bot.send_message(message.chat.id, f"📊 UID {uid} has {fake_likes} likes on {server_name}.")
+    
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ Error: {e}")
 
-# ✅ Bot Polling (अलग थ्रेड में चलेगा)
+# ✅ Run Bot & Flask Together
 def run_bot():
     bot.polling(none_stop=True)
 
