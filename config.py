@@ -11,7 +11,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Временная директория для хранения загруженных видео
 TEMP_DIRECTORY = os.path.join(BASE_DIR, 'temp_videos')
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+BOT_TOKEN = os.getenv('7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M')
 RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY')
 RAPIDAPI_HOST = "social-media-video-downloader.p.rapidapi.com"
 WEBHOOK_PATH = os.getenv('WEBHOOK_PATH')
