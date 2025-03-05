@@ -1,10 +1,6 @@
-aiogram
-aiohttp
-python-dotenv
-asyncio
-asyncio
-pymongo
+telebot
 requests
-ddinsta
-stripe
-gunicorn
+time
+  BytesIO
+urllib.parse
+
