@@ -1,100 +1,80 @@
-import asyncio
-import logging
+import telebot
+import requests
+import time
+from io import BytesIO
+import urllib.parse
 
-from aiogram import Bot, Dispatcher, types
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-from aiohttp import web
+BOT_TOKEN = "7090605258:AAGhLlwgEHw4KSogSqcV7Srho5I7GexLV6M"
+bot = telebot.TeleBot(BOT_TOKEN)
 
-from config import BOT_TOKEN, WEBHOOK_PATH, WEBHOOK_URL
-from handlers.handlers import register_handlers
-from utils.stripe_webhook_handler import setup_stripe_webhook
+# 📌 /start Command
+@bot.message_handler(commands=['start'])
+def handle_start(message):
+    bot.send_message(message.chat.id, 
+        "🎮 *Welcome to Free Fire Bot!* 🔥\n\n"
+        "📌 *Available Commands:*\n"
+        "🎭 /ffevents [region] - Get Free Fire Events\n\n"
+        "🔹 Example: /ffevents IND", parse_mode='Markdown')
 
-logging.basicConfig(level=logging.INFO)
-
-
-async def handle_root(request):
-    return web.Response(text="Bot is running")
-
-
-async def handle_webhook_get(request):
-    return web.Response(text="Webhook is set up and working.")
-
-
-async def on_startup(app):
-    bot = app['bot']
-    webhook_url = WEBHOOK_URL + WEBHOOK_PATH
-    logging.info(f"Setting webhook to {webhook_url}")
-    await bot.set_webhook(webhook_url)
-    logging.info("Webhook set successfully")
-
-
-async def on_shutdown(app):
-    bot = app['bot']
-    logging.info("Closing bot session")
-    await bot.session.close()
-    logging.info("Bot session closed")
-
-
-async def handle_message(message: types.Message):
+# 📌 /ffevents Command
+@bot.message_handler(commands=['ffevents'])
+def handle_ffevents(message):
     try:
-        await message.answer("Received your message")
+        parts = message.text.split(' ', 1)
+        if len(parts) < 2:
+            bot.reply_to(message, "ℹ️ *Please provide a region code!*\nExample: /ffevents IND", parse_mode='Markdown')
+            return
+        
+        region = parts[1].upper().strip()  
+        encoded_region = urllib.parse.quote(region)  
+
+        # ✅ 1. लोडिंग मैसेज भेजें और तुरंत अपडेट करें
+        loading_msg = bot.reply_to(message, "⏳ Loading... 0%")
+        
+        for i in range(10, 101, 10):
+            bot.edit_message_text(f"⏳ Loading... {i}%", message.chat.id, loading_msg.message_id)
+            time.sleep(0.1)  # बहुत ज़्यादा देरी नहीं होगी
+        
+        # ✅ 2. जैसे ही 100% पहुंचे, तुरंत API से डेटा लाएं
+        url = f'https://ff-event-nine.vercel.app/events?region={encoded_region}'
+        response = requests.get(url)
+
+        # ✅ 3. 100% दिखाने के तुरंत बाद लोडिंग मैसेज हटा दें
+        bot.delete_message(message.chat.id, loading_msg.message_id)
+
+        if response.status_code == 200:
+            data = response.json()
+            events = data.get("events", [])
+
+            if not events:
+                bot.send_message(message.chat.id, f"❌ *No upcoming events found for {region}*", parse_mode='Markdown')
+                return
+
+            # ✅ 4. इवेंट्स को तुरंत भेजना शुरू करें
+            for event in events:
+                msg = f"🎭 *{event['poster-title']}*\n"
+                msg += f"🕒 {event['start']} - {event['end']}\n"
+                msg += f"📌 *Status:* {event['status']}\n"
+
+                if event["desc"]:
+                    msg += f"📖 *Details:* {event['desc'][:300]}...\n\n"
+
+                # ✅ 5. इमेज भेजें (अगर उपलब्ध हो)
+                if event["src"]:
+                    img_response = requests.get(event["src"])
+                    if img_response.status_code == 200:
+                        img = BytesIO(img_response.content)
+                        img.name = "event.jpg"
+                        bot.send_photo(message.chat.id, img, caption=msg, parse_mode='Markdown')
+                    else:
+                        bot.send_message(message.chat.id, msg, parse_mode='Markdown')
+                else:
+                    bot.send_message(message.chat.id, msg, parse_mode='Markdown')
+
+        else:
+            bot.send_message(message.chat.id, f"🔴 *Error fetching events:* {response.status_code}", parse_mode='Markdown')
+
     except Exception as e:
-        logging.error(f"Error in handle_message: {e}")
+        bot.send_message(message.chat.id, f"⚠️ *Error:* {str(e)}", parse_mode='Markdown')
 
-
-async def create_app():
-    bot = Bot(token=BOT_TOKEN)
-    dp = Dispatcher()
-
-    logging.info("Deleting webhook")
-    await bot.delete_webhook(drop_pending_updates=True)
-    logging.info("Webhook deleted")
-
-    register_handlers(dp)
-
-    app = web.Application()
-    app['bot'] = bot
-
-    webhook_handler = SimpleRequestHandler(
-        dispatcher=dp,
-        bot=bot,
-    )
-    webhook_handler.register(app, path=WEBHOOK_PATH)
-    setup_application(app, dp, bot=bot)
-
-    setup_stripe_webhook(app)
-
-    app.router.add_route('*', '/', handle_root)
-    app.router.add_get(WEBHOOK_PATH, handle_webhook_get)
-
-    app.on_startup.append(on_startup)
-    app.on_shutdown.append(on_shutdown)
-
-    return app
-
-
-async def main():
-    app = await create_app()
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 8000)
-
-    logging.info("Starting web application")
-    await site.start()
-
-    try:
-        # Run forever
-        await asyncio.Event().wait()
-    except KeyboardInterrupt:
-        logging.info("KeyboardInterrupt received. Shutting down...")
-    finally:
-        logging.info("Cleaning up...")
-        await runner.cleanup()
-        logging.info("Cleanup complete. Exiting.")
-
-if __name__ == '__main__':
-    logging.info("Starting bot")
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logging.info("Bot stopped")
+bot.polling(none_stop=True)
